@@ -313,7 +313,7 @@ implements HiveDriverFilterHook {
       for (String perm : hiveAuthzBinding.getLastQueryPrivilegeErrors()) {
         permsRequired += perm + ";";
       }
-      context.getConf().set(HiveAuthzConf.HIVE_SENTRY_AUTH_ERRORS, permsRequired);
+      SessionState.get().getConf().set(HiveAuthzConf.HIVE_SENTRY_AUTH_ERRORS, permsRequired);
       throw new SemanticException(HiveAuthzConf.HIVE_SENTRY_PRIVILEGE_ERROR_MESSAGE, e);
     }
     if ("true".equalsIgnoreCase(context.getConf().
