@@ -314,7 +314,9 @@ implements HiveDriverFilterHook {
         permsRequired += perm + ";";
       }
       SessionState.get().getConf().set(HiveAuthzConf.HIVE_SENTRY_AUTH_ERRORS, permsRequired);
-      throw new SemanticException(HiveAuthzConf.HIVE_SENTRY_PRIVILEGE_ERROR_MESSAGE, e);
+      String msg = HiveAuthzConf.HIVE_SENTRY_PRIVILEGE_ERROR_MESSAGE + "\n Required privileges for this query: "
+          + permsRequired;
+      throw new SemanticException(msg, e);
     }
     if ("true".equalsIgnoreCase(context.getConf().
         get(HiveAuthzConf.HIVE_SENTRY_MOCK_COMPILATION))) {
