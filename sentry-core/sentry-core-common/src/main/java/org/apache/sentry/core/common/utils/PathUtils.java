@@ -114,6 +114,8 @@ public class PathUtils {
     } else {
       if (uri.startsWith("file:")) {
         uri = uri.replace("file:", "file://");
+      } if (uri.startsWith("hdfs:")) {
+        uri = uri.replace("hdfs:", "hdfs://");
       } else if (uri.startsWith("/")) {
         if (warehouseDir.startsWith("maprfs:")) {
           URI warehouse = toDFSURI(warehouseDir);
