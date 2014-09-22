@@ -166,6 +166,7 @@ implements HiveDriverFilterHook {
       case HiveParser.TOK_ALTERINDEX_REBUILD:
         currTab = extractTable((ASTNode)ast.getChild(0)); //type is not TOK_TABNAME
         currDB = extractDatabase((ASTNode) ast.getChild(0));
+        break;
       case HiveParser.TOK_SHOW_TABLESTATUS:
         currDB = extractDatabase((ASTNode)ast.getChild(0));
         int children = ast.getChildCount();
