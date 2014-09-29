@@ -16,8 +16,7 @@
 # limitations under the License.
 
 usage="Usage: sentry-daemon.sh \
- (start|stop|status)  \
- "
+ (start <configuration file>|stop|status)"
 
 PATH_BIN=`dirname "${BASH_SOURCE-$0}"`
 
@@ -29,6 +28,14 @@ if [ $# -lt 1 ]; then
 fi
 
 COMMAND=$1
+CONF_FILE=$2
+
+if [[ $COMMAND == 'start' && -z $CONF_FILE ]]; then
+    echo 'Error: No configuration file is set!'
+    echo $usage
+    exit 1
+fi
+
 
 case $COMMAND in
  status)
@@ -54,6 +61,6 @@ case $COMMAND in
  ;;
  start)
      echo " `date +%m.%d-%H:%M:%S` INFO : Process starting for sentry " >> $PATH_LOG/daemons.txt
-     $PATH_BIN/sentry --command service -c #FIXME: (osayankin) Add configuration file here
+     $PATH_BIN/sentry --command service -c $CONF_FILE
      echo " `date +%d-%H.%M.%S` INFO : Process started for sentry " >> $PATH_LOG/daemons.txt
 esac
