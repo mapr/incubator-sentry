@@ -505,6 +505,12 @@ implements HiveDriverFilterHook {
         udfUriHierarchy.add(hiveAuthzBinding.getAuthServer());
         udfUriHierarchy.add(udfURI);
         inputHierarchy.add(udfUriHierarchy);
+        for (WriteEntity writeEntity : outputs) {
+          List<DBModelAuthorizable> entityHierarchy = new ArrayList<DBModelAuthorizable>();
+          entityHierarchy.add(hiveAuthzBinding.getAuthServer());
+          entityHierarchy.addAll(getAuthzHierarchyFromEntity(writeEntity));
+          outputHierarchy.add(entityHierarchy);
+        }
       }
 
       outputHierarchy.add(connectHierarchy);
