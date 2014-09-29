@@ -46,6 +46,7 @@
         <include>bin/**</include>
         <include>**/.gitignore</include>
         <include>conf/**</include>
+        <include>conf.d/**</include>
         <include>pom.xml</include>
         <include>CHANGELOG*</include>
         <include>DISCLAIMER*</include>
