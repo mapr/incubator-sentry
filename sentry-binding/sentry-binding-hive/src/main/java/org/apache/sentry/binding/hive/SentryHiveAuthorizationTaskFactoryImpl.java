@@ -273,12 +273,20 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
   }
 
   @Override
-  public Task<? extends Serializable> createShowRolesTask(ASTNode ast, Path resFile,
-      HashSet<ReadEntity> inputs, HashSet<WriteEntity> outputs) throws SemanticException {
-    RoleDDLDesc showRolesDesc = new RoleDDLDesc(null, null, RoleDDLDesc.RoleOperation.SHOW_ROLES,
-        null);
-    showRolesDesc.setResFile(resFile.toString());
-    return createTask(new DDLWork(inputs, outputs, showRolesDesc));
+  public Task<? extends Serializable> createShowRolePrincipalsTask(ASTNode astNode, Path path, HashSet<ReadEntity> inputs, HashSet<WriteEntity> outputs) throws SemanticException {
+    String roleName;
+
+    if (astNode.getChildCount() == 1) {
+      roleName = astNode.getChild(0).getText();
+    } else {
+      // the parser should not allow this
+      throw new AssertionError("Unexpected Tokens in SHOW ROLE PRINCIPALS");
+    }
+
+    RoleDDLDesc roleDDLDesc = new RoleDDLDesc(roleName, PrincipalType.ROLE,
+        RoleDDLDesc.RoleOperation.SHOW_ROLE_PRINCIPALS, null);
+    roleDDLDesc.setResFile(path.toString());
+    return createTask(new DDLWork(inputs, outputs, roleDDLDesc));
   }
 
   private SentryHivePrivilegeObjectDesc analyzePrivilegeObject(ASTNode ast)
