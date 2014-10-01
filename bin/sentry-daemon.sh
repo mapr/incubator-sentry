@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -39,7 +39,7 @@ fi
 
 case $COMMAND in
  status)
-     PROCESS_ID=`jps | grep sentry | awk -F " " '{print $1}' | grep -v '^$'`
+     PROCESS_ID=`ps -aux|grep "sentry"|grep "start"| awk -F " " '{print $2}'`
      if [ -n "$PROCESS_ID" ];then
          echo Sentry is running as process $PROCESS_ID.
          echo " `date +%m.%d-%H:%M:%S` INFO : Process checked for sentry : TRUE" >> $PATH_LOG/daemons.txt
@@ -51,7 +51,7 @@ case $COMMAND in
      fi
  ;;
  stop)
-     PROCES_ID=`jps | grep sentry | awk -F " " '{print $1}'`
+     PROCES_ID=`ps -aux|grep "sentry"|grep "start"| awk -F " " '{print $2}'`
      if [ -n "$PROCESS_ID" ];then
          kill -9 $PROCES_ID
          exit 0
