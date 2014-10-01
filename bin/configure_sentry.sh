@@ -16,7 +16,7 @@
 # limitations under the License.
 
 read -p "[INPUT] MySql user: " USER
-read -p "[INPUT] MySql password: " PASSWORD
+read -p "[INPUT] MySql password: " -s PASSWORD
 echo
 echo "[INFO] Create sentry store schema in mysql..."
 mysql -u$USER -p$PASSWORD < create_sentry_store_schema.sql
