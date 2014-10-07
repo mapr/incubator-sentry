@@ -51,9 +51,11 @@ case $COMMAND in
      fi
  ;;
  stop)
-     PROCES_ID=`ps -aux|grep "sentry"|grep "start"| awk -F " " '{print $2}'`
-     if [ -n "$PROCESS_ID" ];then
-         kill -9 $PROCES_ID
+     SENTRY_PROCESS_ID=`cat /opt/mapr/pid/sentry.pid`
+     SENTRY_THRIFT_PROCESS_ID=`cat /opt/mapr/pid/sentry-thrift.pid`
+     if [ -n "$SENTRY_PROCESS_ID" ];then
+         kill -9 $SENTRY_PROCESS_ID
+         kill -9 $SENTRY_THRIFT_PROCESS_ID
          exit 0
      else
          echo Sentry is not running.
