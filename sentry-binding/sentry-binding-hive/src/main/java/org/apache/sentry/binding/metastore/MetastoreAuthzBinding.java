@@ -288,19 +288,19 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
   private void authorizeAddPartition(PreAddPartitionEvent context)
       throws InvalidOperationException, MetaException, NoSuchObjectException {
     HierarcyBuilder inputBuilder = new HierarcyBuilder();
-    inputBuilder.addTableToOutput(getAuthServer(), context.getPartition()
-        .getDbName(), context.getPartition().getTableName());
+    inputBuilder.addTableToOutput(getAuthServer(), context.getPartitions().get(0)
+        .getDbName(), context.getPartitions().get(0).getTableName());
     // check if we need to validate URI permissions when storage location is
     // non-default, ie something not under the parent table
-    String partitionLocation = getSdLocation(context.getPartition().getSd());
+    String partitionLocation = getSdLocation(context.getPartitions().get(0).getSd());
     if (!StringUtils.isEmpty(partitionLocation)) {
       String tableLocation = context
           .getHandler()
-          .get_table(context.getPartition().getDbName(),
-              context.getPartition().getTableName()).getSd().getLocation();
+          .get_table(context.getPartitions().get(0).getDbName(),
+              context.getPartitions().get(0).getTableName()).getSd().getLocation();
       String uriPath;
       try {
-        uriPath = PathUtils.parseDFSURI(warehouseDir, context.getPartition()
+        uriPath = PathUtils.parseDFSURI(warehouseDir, context.getPartitions().get(0)
             .getSd().getLocation());
       } catch (URISyntaxException e) {
         throw new MetaException(e.getMessage());
@@ -312,8 +312,8 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
     authorizeMetastoreAccess(HiveOperation.ALTERTABLE_ADDPARTS,
         inputBuilder.build(),
         new HierarcyBuilder().addTableToOutput(getAuthServer(),
-            context.getPartition().getDbName(),
-            context.getPartition().getTableName()).build());
+            context.getPartitions().get(0).getDbName(),
+            context.getPartitions().get(0).getTableName()).build());
   }
 
   private void authorizeDropPartition(PreDropPartitionEvent context)
