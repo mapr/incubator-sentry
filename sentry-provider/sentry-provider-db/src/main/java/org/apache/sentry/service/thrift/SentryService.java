@@ -85,11 +85,12 @@ public class SentryService implements Callable {
   private Future future;
 
   private TServer thriftServer;
+  private static int port;
   private Status status;
 
   public SentryService(Configuration conf) {
     this.conf = conf;
-    int port = conf
+    port = conf
         .getInt(ServerConfig.RPC_PORT, ServerConfig.RPC_PORT_DEFAULT);
     if (port == 0) {
       port = findFreePort();
@@ -327,6 +328,8 @@ public class SentryService implements Callable {
         }
       });
 
+      PidUtils.createSentryServicePidFile();
+      PidUtils.createSentryThriftServicePidFile(port);
       // Let's wait on the service to stop
       try {
         LOGGER.info("Waiting on future.get()");
