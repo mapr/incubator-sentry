@@ -289,6 +289,15 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     return createTask(new DDLWork(inputs, outputs, roleDDLDesc));
   }
 
+  @Override
+  public Task<? extends Serializable> createShowRolesTask(ASTNode ast, Path resFile,
+                                                      HashSet<ReadEntity> inputs, HashSet<WriteEntity> outputs) throws SemanticException {
+    RoleDDLDesc showRolesDesc = new RoleDDLDesc(null, null, RoleDDLDesc.RoleOperation.SHOW_ROLES,
+        null);
+    showRolesDesc.setResFile(resFile.toString());
+    return createTask(new DDLWork(inputs, outputs, showRolesDesc));
+  }
+
   private SentryHivePrivilegeObjectDesc analyzePrivilegeObject(ASTNode ast)
       throws SemanticException {
     SentryHivePrivilegeObjectDesc subject = new SentryHivePrivilegeObjectDesc();
