@@ -301,6 +301,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
   private SentryHivePrivilegeObjectDesc analyzePrivilegeObject(ASTNode ast)
       throws SemanticException {
     SentryHivePrivilegeObjectDesc subject = new SentryHivePrivilegeObjectDesc();
+    subject.setTable(false);
     String privilegeObject = BaseSemanticAnalyzer.unescapeIdentifier(ast
         .getChild(0).getText());
     if (ast.getChildCount() > 1) {
