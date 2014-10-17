@@ -23,14 +23,13 @@ public class AccessURI implements DBModelAuthorizable {
   public static final AccessURI ALL = new AccessURI(AccessConstants.ALL);
 
   private final String uriName;
-
+  private final String uriRegex = "(\\w*):/.*";
 
   public AccessURI(String uriName) {
     uriName = uriName == null ? "" : uriName;
     if(!(uriName.equals(AccessConstants.ALL) ||
-        uriName.startsWith("file://") ||
-        uriName.startsWith("hdfs://"))) {
-      throw new IllegalArgumentException("URI '" + uriName + "' in invalid. Must start with file:// or hdfs://");
+        uriName.matches(uriRegex))) {
+      throw new IllegalArgumentException("URI '" + uriName + "' in invalid. Must start with 'schema':/");
     }
     this.uriName = uriName;
   }

@@ -19,10 +19,15 @@ package org.apache.sentry.core.common.utils;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.common.base.Strings;
 
 public class PathUtils {
+
+  private final static String uriRegex = "(\\w*):/.*";
+
   /**
    * URI is a a special case. For URI's, /a implies /a/b.
    * Therefore the test is "/a/b".startsWith("/a");
@@ -73,19 +78,19 @@ public class PathUtils {
   }
 
   /**
-   * Parse a URI which should be on HDFS in the normal case but can be on a local
+   * Parse a URI which should be on MapRFS in the normal case but can be on a local
    * file system in the testing case. In either case it should be on the same fs
    * as the warehouse directory.
    */
   public static String parseDFSURI(String warehouseDir, String uri, boolean isLocal)
       throws URISyntaxException {
-    if ((uri.startsWith("file://") || uri.startsWith("hdfs://"))) {
+    if ((uri.matches(uriRegex))) {
       return uri;
     } else {
       if (uri.startsWith("file:")) {
         uri = uri.replace("file:", "file://");
       } else if (uri.startsWith("/")) {
-        if (warehouseDir.startsWith("hdfs:")) {
+        if (warehouseDir.startsWith("maprfs:")) {
           URI warehouse = toDFSURI(warehouseDir);
           uri = warehouse.getScheme() + "://" + warehouse.getAuthority() + uri;
         } else if (warehouseDir.startsWith("file:")) {
@@ -98,7 +103,7 @@ public class PathUtils {
             // to a URI at this point in time since no namenode is specified
             // and warehouseDir appear to just be a path starting with / ?
             // I think in the isLocal = false case we might want to throw
-            uri = "hdfs://" + uri;
+            uri = "maprfs:/" + uri;
           }
         }
       }
