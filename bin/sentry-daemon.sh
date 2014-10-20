@@ -22,6 +22,7 @@ PATH_BIN=`dirname "${BASH_SOURCE-$0}"`
 
 SENTRY_PATH=$PATH_BIN/..
 PATH_LOG=$SENTRY_PATH/logs
+PATH_CONF=$SENTRY_PATH/conf
 if [ $# -lt 1 ]; then
     echo $usage
     exit 1
@@ -63,6 +64,6 @@ case $COMMAND in
  ;;
  start)
      echo " `date +%m.%d-%H:%M:%S` INFO : Process starting for sentry " >> $PATH_LOG/daemons.txt
-     $PATH_BIN/sentry --command service -c $CONF_FILE
+     ${PATH_BIN}/sentry --log4jConf ${PATH_CONF}/log4j.properties --command service -c ${CONF_FILE}
      echo " `date +%d-%H.%M.%S` INFO : Process started for sentry " >> $PATH_LOG/daemons.txt
 esac
