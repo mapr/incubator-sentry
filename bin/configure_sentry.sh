@@ -22,5 +22,5 @@ echo "[INFO] Create sentry store schema in mysql..."
 mysql -u$USER -p$PASSWORD < create_sentry_store_schema.sql
 echo "[INFO] Done."
 echo "[INFO] Init sentry schema..."
-bash sentry --command schema-tool --conffile /opt/mapr/sentry/sentry-1.4.0/conf/default-hive-sentry-site.xml --dbType mysql --initSchema
+bash sentry --command schema-tool --conffile /opt/mapr/sentry/sentry-1.4.0/conf/sentry-site.xml --dbType mysql --initSchema
 echo "[INFO] Done."

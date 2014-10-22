@@ -45,7 +45,7 @@
 
   <property>
     <name>sentry.metastore.service.users</name>
-    <value>hive</value>
+    <value>mapr</value>
     <description>
       Comma separated list of users
       List of service users (eg hive, impala) to bypass
@@ -54,11 +54,6 @@
       on their side.
     </description>
   </property>
-
-<!--
-    Some common client properties same as file
-    based provider
--->
 
   <property>
     <name>sentry.provider</name>
@@ -74,7 +69,7 @@
 
   <property>
     <name>sentry.hive.provider.backend</name>
-    <value>org.apache.sentry.provider.file.SimpleFileProviderBackend</value>
+    <value>org.apache.sentry.provider.db.SimpleDBProviderBackend</value>
     <description> Options: {org.apache.sentry.provider.db.SimpleDBProviderBackend, org.apache.sentry.provider.file.SimpleFileProviderBackend}
       Privilege provider to be used, we support file based or db based
     </description>
@@ -82,7 +77,7 @@
 
   <property>
     <name>sentry.hive.provider.resource</name>
-    <value>file:///opt/mapr/sentry/sentry-1.4.0/conf/default-hive-global-policy.ini</value>
+    <value>file:///opt/mapr/sentry/sentry-1.4.0/conf/global-policy.ini</value>
   </property>
 
   <property>
@@ -90,25 +85,29 @@
     <value>true</value>
   </property>
 
-    <property>
-        <name>sentry.store.jdbc.url</name>
-        <value>jdbc:mysql://localhost:3306/sentry_store</value>
-    </property>
+  <property>
+    <name>sentry.store.jdbc.url</name>
+    <value>jdbc:mysql://localhost:3306/sentry_store</value>
+  </property>
 
-    <property>
-        <name>sentry.store.jdbc.driver</name>
-        <value>com.mysql.jdbc.Driver</value>
-    </property>
+  <property>
+    <name>sentry.store.jdbc.driver</name>
+    <value>com.mysql.jdbc.Driver</value>
+  </property>
 
-    <property>
-        <name>sentry.store.jdbc.user</name>
-        <value>sentry</value>
-    </property>
+  <property>
+    <name>sentry.store.jdbc.user</name>
+    <value>sentry</value>
+  </property>
 
-    <property>
-        <name>sentry.store.jdbc.password</name>
-        <value>sentry</value>
-    </property>
+  <property>
+    <name>sentry.store.jdbc.password</name>
+    <value>sentry</value>
+  </property>
 
+  <property>
+    <name>sentry.service.admin.group</name>
+    <value>mapr</value>
+  </property>
 
 </configuration>
