@@ -24,10 +24,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.security.CodeSource;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -610,11 +607,13 @@ implements HiveDriverFilterHook {
         setOperationType(HiveOperationType.INFO).
         build();
 
-    for (Object tableNameArray : queryResult) {
+    Iterator queryResultIterator = queryResult.iterator();
 
-      Object temp[] = (Object[]) tableNameArray;
+    while (queryResultIterator.hasNext()) {
+      Object queryResultItem = (Object)queryResultIterator.next();
+      Object tableNameArray[] = (Object[]) queryResultItem;
 
-      for (Object tableName : temp) {
+      for (Object tableName : tableNameArray) {
           // if user has privileges on table, add to filtered list, else discard
         Table table = new Table((String)tableName);
         Database database;
@@ -654,10 +653,13 @@ implements HiveDriverFilterHook {
           setOperationType(HiveOperationType.QUERY).
           build();
 
-      for (Object dbNameArray:queryResult) {
-        Object temp[] = (Object[])dbNameArray;
+      Iterator queryResultIterator = queryResult.iterator();
 
-        for (Object dbName : temp) {
+      while (queryResultIterator.hasNext()) {
+        Object queryResultItem = (Object)queryResultIterator.next();
+        Object dbNameArray[] = (Object[])queryResultItem;
+
+        for (Object dbName : dbNameArray) {
           // if user has privileges on database, add to filtered list, else discard
           Database database = null;
 
