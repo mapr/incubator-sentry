@@ -54,7 +54,7 @@ case $COMMAND in
  stop)
      SENTRY_PROCESS_ID=`cat /opt/mapr/pid/sentry.pid`
      SENTRY_THRIFT_PROCESS_ID=`cat /opt/mapr/pid/sentry-thrift.pid`
-     if [ -n "$SENTRY_PROCESS_ID" ];then
+     if [ -n "$SENTRY_PROCESS_ID" -a $SENTRY_PROCESS_ID -gt 0 -a $SENTRY_THRIFT_PROCESS_ID -gt 0 ];then
          kill -9 $SENTRY_PROCESS_ID
          kill -9 $SENTRY_THRIFT_PROCESS_ID
          exit 0
