@@ -559,6 +559,9 @@ implements HiveDriverFilterHook {
         throw new AuthorizationException("Failed to get File URI", e);
       }
       break;
+    case DATABASE:
+      // TODO use database entities from compiler instead of capturing from AST
+      break;
     default:
       throw new UnsupportedOperationException("Unsupported entity type " +
           entity.getType().name());
