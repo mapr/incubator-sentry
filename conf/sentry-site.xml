@@ -69,7 +69,7 @@
 
     <property>
         <name>sentry.hive.provider.backend</name>
-        <value>org.apache.sentry.provider.db.SimpleDBProviderBackend</value>
+        <value>org.apache.sentry.provider.file.SimpleFileProviderBackend</value>
         <description> Options: {org.apache.sentry.provider.db.SimpleDBProviderBackend, org.apache.sentry.provider.file.SimpleFileProviderBackend}
             Privilege provider to be used, we support file based or db based
         </description>
@@ -83,26 +83,6 @@
     <property>
         <name>sentry.hive.testing.mode</name>
         <value>true</value>
-    </property>
-
-    <property>
-        <name>sentry.store.jdbc.url</name>
-        <value>jdbc:mysql://localhost:3306/sentry_store</value>
-    </property>
-
-    <property>
-        <name>sentry.store.jdbc.driver</name>
-        <value>com.mysql.jdbc.Driver</value>
-    </property>
-
-    <property>
-        <name>sentry.store.jdbc.user</name>
-        <value>sentry</value>
-    </property>
-
-    <property>
-        <name>sentry.store.jdbc.password</name>
-        <value>sentry</value>
     </property>
 
     <property>
