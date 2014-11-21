@@ -614,91 +614,118 @@ implements HiveDriverFilterHook {
 
     while (queryResultIterator.hasNext()) {
       Object queryResultItem = (Object)queryResultIterator.next();
-      Object tableNameArray[] = (Object[]) queryResultItem;
 
-      for (Object tableName : tableNameArray) {
+      if (queryResultItem instanceof Object[]) {
+
+        Object tableNameArray[] = (Object[]) queryResultItem;
+
+        for (Object tableName : tableNameArray) {
           // if user has privileges on table, add to filtered list, else discard
-        Table table = new Table((String)tableName);
-        Database database;
-        database = new Database(dbName);
-
-        List<List<DBModelAuthorizable>> inputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
-        List<List<DBModelAuthorizable>> outputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
-        List<DBModelAuthorizable> externalAuthorizableHierarchy = new ArrayList<DBModelAuthorizable>();
-        externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
-        externalAuthorizableHierarchy.add(database);
-        externalAuthorizableHierarchy.add(table);
-        inputHierarchy.add(externalAuthorizableHierarchy);
-
-        try {
-          hiveAuthzBinding.authorize(operation, tableMetaDataPrivilege, subject,
-                inputHierarchy, outputHierarchy);
-          filteredResult.add(table.getName());
-        } catch (AuthorizationException e) {
-          // squash the exception, user doesn't have privileges, so the table is
-          // not added to
-          // filtered list.
-          ;
+          filterShowTableIteration(tableName, filteredResult, operation, tableMetaDataPrivilege, subject, dbName);
         }
+      } else if (queryResultItem instanceof String) {
+        filterShowTableIteration(queryResultItem, filteredResult, operation, tableMetaDataPrivilege, subject, dbName);
       }
     }
+
     return filteredResult;
   }
 
-    private List<String> filterShowDatabases(List<String> queryResult,
-                                             HiveOperation operation, String userName) throws SemanticException {
-      List<String> filteredResult = new ArrayList<String>();
-      Subject subject = new Subject(userName);
-      HiveAuthzPrivileges anyPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-          addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT)).
-          addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.SELECT)).
-          setOperationScope(HiveOperationScope.CONNECT).
-          setOperationType(HiveOperationType.QUERY).
-          build();
+  // TODO refactor this due to SENTRY-326
+  private void filterShowTableIteration(Object tableName, List<String> filteredResult,
+                                          HiveOperation operation, HiveAuthzPrivileges tableMetaDataPrivilege,
+                                          Subject subject, String dbName) {
+    Table table = new Table((String)tableName);
+    Database database;
+    database = new Database(dbName);
 
-      Iterator queryResultIterator = queryResult.iterator();
+    List<List<DBModelAuthorizable>> inputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
+    List<List<DBModelAuthorizable>> outputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
+    List<DBModelAuthorizable> externalAuthorizableHierarchy = new ArrayList<DBModelAuthorizable>();
+    externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
+    externalAuthorizableHierarchy.add(database);
+    externalAuthorizableHierarchy.add(table);
+    inputHierarchy.add(externalAuthorizableHierarchy);
 
-      while (queryResultIterator.hasNext()) {
-        Object queryResultItem = (Object)queryResultIterator.next();
+    try {
+      hiveAuthzBinding.authorize(operation, tableMetaDataPrivilege, subject,
+          inputHierarchy, outputHierarchy);
+      filteredResult.add(table.getName());
+    } catch (AuthorizationException e) {
+      // squash the exception, user doesn't have privileges, so the table is
+      // not added to
+      // filtered list.
+      ;
+    }
+  }
+
+  private List<String> filterShowDatabases(List<String> queryResult,
+                                           HiveOperation operation, String userName) throws SemanticException {
+    List<String> filteredResult = new ArrayList<String>();
+    Subject subject = new Subject(userName);
+    HiveAuthzPrivileges anyPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT)).
+        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.SELECT)).
+        setOperationScope(HiveOperationScope.CONNECT).
+        setOperationType(HiveOperationType.QUERY).
+        build();
+
+    Iterator queryResultIterator = queryResult.iterator();
+
+    while (queryResultIterator.hasNext()) {
+      Object queryResultItem = (Object)queryResultIterator.next();
+
+      if (queryResultItem instanceof Object[]) {
+
         Object dbNameArray[] = (Object[])queryResultItem;
 
         for (Object dbName : dbNameArray) {
-          // if user has privileges on database, add to filtered list, else discard
-          Database database = null;
-
-                // if default is not restricted, continue
-          if (DEFAULT_DATABASE_NAME.equalsIgnoreCase((String)dbName) &&
-              "false".equalsIgnoreCase(authzConf.
-              get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false"))) {
-            filteredResult.add(DEFAULT_DATABASE_NAME);
-            continue;
-          }
-
-          database = new Database((String)dbName);
-
-          List<List<DBModelAuthorizable>> inputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
-          List<List<DBModelAuthorizable>> outputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
-          List<DBModelAuthorizable> externalAuthorizableHierarchy = new ArrayList<DBModelAuthorizable>();
-          externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
-          externalAuthorizableHierarchy.add(database);
-          externalAuthorizableHierarchy.add(Table.ALL);
-          inputHierarchy.add(externalAuthorizableHierarchy);
-
-          try {
-            hiveAuthzBinding.authorize(operation, anyPrivilege, subject,
-            inputHierarchy, outputHierarchy);
-            filteredResult.add(database.getName());
-          } catch (AuthorizationException e) {
-            // squash the exception, user doesn't have privileges, so the table is
-            // not added to
-            // filtered list.
-            ;
-          }
+        // if user has privileges on database, add to filtered list, else discard
+          filterShowDatabasesIteration(dbName, filteredResult, operation, anyPrivilege, subject);
         }
+      } else if (queryResultItem instanceof String) {
+          filterShowDatabasesIteration(queryResultItem, filteredResult, operation, anyPrivilege, subject);
       }
-
-      return filteredResult;
     }
+
+    return filteredResult;
+  }
+
+  // TODO refactor this due to SENTRY-326
+  private void filterShowDatabasesIteration(Object dbName, List<String> filteredResult,
+                                            HiveOperation operation, HiveAuthzPrivileges anyPrivilege,
+                                            Subject subject) {
+    Database database = null;
+
+    // if default is not restricted, continue
+    if (DEFAULT_DATABASE_NAME.equalsIgnoreCase((String)dbName) &&
+        "false".equalsIgnoreCase(authzConf.
+                get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false"))) {
+      filteredResult.add(DEFAULT_DATABASE_NAME);
+      return;
+    }
+
+    database = new Database((String)dbName);
+
+    List<List<DBModelAuthorizable>> inputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
+    List<List<DBModelAuthorizable>> outputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
+    List<DBModelAuthorizable> externalAuthorizableHierarchy = new ArrayList<DBModelAuthorizable>();
+    externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
+    externalAuthorizableHierarchy.add(database);
+    externalAuthorizableHierarchy.add(Table.ALL);
+    inputHierarchy.add(externalAuthorizableHierarchy);
+
+    try {
+      hiveAuthzBinding.authorize(operation, anyPrivilege, subject,
+              inputHierarchy, outputHierarchy);
+      filteredResult.add(database.getName());
+    } catch (AuthorizationException e) {
+      // squash the exception, user doesn't have privileges, so the table is
+      // not added to
+      // filtered list.
+      ;
+    }
+  }
 
   @Override
   public HiveDriverFilterHookResult postDriverFetch( HiveDriverFilterHookContext hookContext)
