@@ -26,6 +26,7 @@ import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.security.PrivilegedExceptionAction;
 import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -47,6 +48,8 @@ import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.hadoop.security.SecurityUtil;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.rpcauth.RpcAuthMethod;
 import org.apache.sentry.Command;
 import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -54,10 +57,7 @@ import org.apache.thrift.TMultiplexedProcessor;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TThreadPoolServer;
-import org.apache.thrift.transport.TSaslServerTransport;
-import org.apache.thrift.transport.TServerSocket;
-import org.apache.thrift.transport.TServerTransport;
-import org.apache.thrift.transport.TTransportFactory;
+import org.apache.thrift.transport.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,6 +78,7 @@ public class SentryService implements Callable {
   private final int maxThreads;
   private final int minThreads;
   private boolean kerberos;
+  private boolean maprsasl;
   private final String principal;
   private final String[] principalParts;
   private final String keytab;
@@ -99,8 +100,16 @@ public class SentryService implements Callable {
         conf.get(ServerConfig.RPC_ADDRESS, ServerConfig.RPC_ADDRESS_DEFAULT),
         port);
     LOGGER.info("Configured on address " + address);
-    kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
+    maprsasl = ServerConfig.SECURITY_MODE_MAPRSASL.equalsIgnoreCase(
         conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
+
+    if (maprsasl) {
+      kerberos = false;
+    } else {
+      kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
+          conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
+    }
+
     maxThreads = conf.getInt(ServerConfig.RPC_MAX_THREADS,
         ServerConfig.RPC_MAX_THREADS_DEFAULT);
     minThreads = conf.getInt(ServerConfig.RPC_MIN_THREADS,
@@ -215,6 +224,20 @@ public class SentryService implements Callable {
           .getMechanismName(), principalParts[0], principalParts[1],
           ServerConfig.SASL_PROPERTIES, new GSSCallback(conf));
       transportFactory = saslTransportFactory;
+    } else if (maprsasl) {
+      final UserGroupInformation realUgi = UserGroupInformation.getCurrentUser();
+      List<RpcAuthMethod> rpcAuthMethods = realUgi.getRpcAuthMethodList();
+      TSaslServerTransport.Factory transFactory = new TSaslServerTransport.Factory();
+
+      for (RpcAuthMethod rpcAuthMethod : rpcAuthMethods) {
+        transFactory.addServerDefinition(rpcAuthMethod.getMechanismName(),
+            null,
+            SaslRpcServer.SASL_DEFAULT_REALM,
+            ServerConfig.SASL_PROPERTIES,
+            rpcAuthMethod.createCallbackHandler());
+
+        transportFactory = transFactory;
+      }
     } else {
       transportFactory = new TTransportFactory();
     }

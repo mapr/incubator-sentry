@@ -34,6 +34,8 @@ import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.rpcauth.RpcAuthMethod;
+import org.apache.hadoop.security.rpcauth.RpcAuthRegistry;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
@@ -63,6 +65,7 @@ public class SentryPolicyServiceClient {
   private final Configuration conf;
   private final InetSocketAddress serverAddress;
   private final boolean kerberos;
+  private final boolean maprsasl;
   private final String[] serverPrincipalParts;
   private SentryPolicyService.Client client;
   private TTransport transport;
@@ -125,8 +128,18 @@ public class SentryPolicyServiceClient {
                            ClientConfig.SERVER_RPC_PORT, ClientConfig.SERVER_RPC_PORT_DEFAULT));
     this.connectionTimeout = conf.getInt(ClientConfig.SERVER_RPC_CONN_TIMEOUT,
                                          ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
-    kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
-        conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
+
+    maprsasl = ServerConfig.SECURITY_MODE_MAPRSASL.equalsIgnoreCase(
+            conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
+
+    if (maprsasl) {
+      kerberos = false;
+    }
+    else {
+      kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
+          conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
+    }
+
     transport = new TSocket(serverAddress.getHostName(),
         serverAddress.getPort(), connectionTimeout);
     if (kerberos) {
@@ -144,6 +157,16 @@ public class SentryPolicyServiceClient {
       transport = new UgiSaslClientTransport(AuthMethod.KERBEROS.getMechanismName(),
           null, serverPrincipalParts[0], serverPrincipalParts[1],
           ClientConfig.SASL_PROPERTIES, null, transport, wrapUgi);
+    } else if (maprsasl) {
+      serverPrincipalParts = null;
+
+      UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+      RpcAuthMethod rpcAuthMethod = RpcAuthRegistry.getAuthMethod(ugi.getAuthenticationMethod());
+
+      transport = new UgiSaslClientTransport(rpcAuthMethod.getMechanismName(), null,
+          null, SaslRpcServer.SASL_DEFAULT_REALM, ClientConfig.SASL_PROPERTIES,
+          null, transport, true);
+
     } else {
       serverPrincipalParts = null;
     }
