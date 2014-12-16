@@ -138,6 +138,11 @@ limitations under the License.
       <artifactId>mockito-all</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.mapr.util</groupId>
+      <artifactId>baseutils</artifactId>
+      <version>4.0.1-mapr</version>
+    </dependency>
   </dependencies>
 
   <build>

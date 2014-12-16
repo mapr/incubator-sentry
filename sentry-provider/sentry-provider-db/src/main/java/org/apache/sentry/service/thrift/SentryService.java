@@ -18,31 +18,10 @@
 
 package org.apache.sentry.service.thrift;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.ServerSocket;
-import java.security.PrivilegedExceptionAction;
-import java.util.HashSet;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
-
-import javax.security.auth.Subject;
-import javax.security.auth.kerberos.KerberosPrincipal;
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
+import com.mapr.security.callback.MaprSaslCallbackHandler;
+import org.apache.commons.cli.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
@@ -57,12 +36,29 @@ import org.apache.thrift.TMultiplexedProcessor;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TThreadPoolServer;
-import org.apache.thrift.transport.*;
+import org.apache.thrift.transport.TSaslServerTransport;
+import org.apache.thrift.transport.TServerSocket;
+import org.apache.thrift.transport.TServerTransport;
+import org.apache.thrift.transport.TTransportFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
+import javax.security.auth.Subject;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.kerberos.KerberosPrincipal;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.ServerSocket;
+import java.security.PrivilegedExceptionAction;
+import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.*;
 
 public class SentryService implements Callable {
 
@@ -234,7 +230,7 @@ public class SentryService implements Callable {
             null,
             SaslRpcServer.SASL_DEFAULT_REALM,
             ServerConfig.SASL_PROPERTIES,
-            rpcAuthMethod.createCallbackHandler());
+            createCallbackHandler(rpcAuthMethod, realUgi));
 
         transportFactory = transFactory;
       }
@@ -249,6 +245,18 @@ public class SentryService implements Callable {
     thriftServer = new TThreadPoolServer(args);
     LOGGER.info("Serving on " + address);
     thriftServer.serve();
+  }
+
+  private CallbackHandler createCallbackHandler(RpcAuthMethod authMethod, final UserGroupInformation realUgi) {
+    try {
+      Method method = authMethod.getClass().getDeclaredMethod("createCallbackHandler");
+      return (CallbackHandler) method.invoke(authMethod);
+    } catch (Exception e) {
+      LOGGER.warn("Exception during attempt to invoke createCallbackHandler method", e);
+      String mechanism = authMethod.getMechanismName();
+      if (AuthMethod.KERBEROS.getMechanismName().equals(mechanism)) return new SaslRpcServer.SaslGssCallbackHandler();
+      return new MaprSaslCallbackHandler(realUgi.getSubject(), realUgi.getUserName());
+    }
   }
 
   public InetSocketAddress getAddress() {
