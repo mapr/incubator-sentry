@@ -65,7 +65,7 @@ public class SentryPolicyServiceClient {
   private final Configuration conf;
   private final InetSocketAddress serverAddress;
   private final boolean kerberos;
-  private final boolean maprsasl;
+  private final boolean other;
   private final String[] serverPrincipalParts;
   private SentryPolicyService.Client client;
   private TTransport transport;
@@ -129,10 +129,10 @@ public class SentryPolicyServiceClient {
     this.connectionTimeout = conf.getInt(ClientConfig.SERVER_RPC_CONN_TIMEOUT,
                                          ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
 
-    maprsasl = ServerConfig.SECURITY_MODE_MAPRSASL.equalsIgnoreCase(
+    other = ServerConfig.SECURITY_MODE_OTHER.equalsIgnoreCase(
             conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
 
-    if (maprsasl) {
+    if (other) {
       kerberos = false;
     }
     else {
@@ -157,7 +157,7 @@ public class SentryPolicyServiceClient {
       transport = new UgiSaslClientTransport(AuthMethod.KERBEROS.getMechanismName(),
           null, serverPrincipalParts[0], serverPrincipalParts[1],
           ClientConfig.SASL_PROPERTIES, null, transport, wrapUgi);
-    } else if (maprsasl) {
+    } else if (other) {
       serverPrincipalParts = null;
 
       UserGroupInformation ugi = UserGroupInformation.getCurrentUser();

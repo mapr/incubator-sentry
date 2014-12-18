@@ -18,10 +18,31 @@
 
 package org.apache.sentry.service.thrift;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
-import com.mapr.security.callback.MaprSaslCallbackHandler;
-import org.apache.commons.cli.*;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.ServerSocket;
+import java.security.PrivilegedExceptionAction;
+import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+
+import javax.security.auth.Subject;
+import javax.security.auth.kerberos.KerberosPrincipal;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
@@ -29,6 +50,7 @@ import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.rpcauth.RpcAuthMethod;
+import org.apache.hadoop.security.rpcauth.RpcAuthRegistry;
 import org.apache.sentry.Command;
 import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -36,29 +58,12 @@ import org.apache.thrift.TMultiplexedProcessor;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TThreadPoolServer;
-import org.apache.thrift.transport.TSaslServerTransport;
-import org.apache.thrift.transport.TServerSocket;
-import org.apache.thrift.transport.TServerTransport;
-import org.apache.thrift.transport.TTransportFactory;
+import org.apache.thrift.transport.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.security.auth.Subject;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.kerberos.KerberosPrincipal;
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.ServerSocket;
-import java.security.PrivilegedExceptionAction;
-import java.util.HashSet;
-import java.util.List;
-import java.util.concurrent.*;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 
 public class SentryService implements Callable {
 
@@ -74,7 +79,7 @@ public class SentryService implements Callable {
   private final int maxThreads;
   private final int minThreads;
   private boolean kerberos;
-  private boolean maprsasl;
+  private boolean other;
   private final String principal;
   private final String[] principalParts;
   private final String keytab;
@@ -96,10 +101,10 @@ public class SentryService implements Callable {
         conf.get(ServerConfig.RPC_ADDRESS, ServerConfig.RPC_ADDRESS_DEFAULT),
         port);
     LOGGER.info("Configured on address " + address);
-    maprsasl = ServerConfig.SECURITY_MODE_MAPRSASL.equalsIgnoreCase(
+    other = ServerConfig.SECURITY_MODE_OTHER.equalsIgnoreCase(
         conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
 
-    if (maprsasl) {
+    if (other) {
       kerberos = false;
     } else {
       kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
@@ -220,20 +225,18 @@ public class SentryService implements Callable {
           .getMechanismName(), principalParts[0], principalParts[1],
           ServerConfig.SASL_PROPERTIES, new GSSCallback(conf));
       transportFactory = saslTransportFactory;
-    } else if (maprsasl) {
+    } else if (other) {
       final UserGroupInformation realUgi = UserGroupInformation.getCurrentUser();
-      List<RpcAuthMethod> rpcAuthMethods = realUgi.getRpcAuthMethodList();
+      RpcAuthMethod rpcAuthMethod = RpcAuthRegistry.getAuthMethod(realUgi.getAuthenticationMethod());
       TSaslServerTransport.Factory transFactory = new TSaslServerTransport.Factory();
 
-      for (RpcAuthMethod rpcAuthMethod : rpcAuthMethods) {
-        transFactory.addServerDefinition(rpcAuthMethod.getMechanismName(),
-            null,
-            SaslRpcServer.SASL_DEFAULT_REALM,
-            ServerConfig.SASL_PROPERTIES,
-            createCallbackHandler(rpcAuthMethod, realUgi));
+      transFactory.addServerDefinition(rpcAuthMethod.getMechanismName(),
+          null,
+          SaslRpcServer.SASL_DEFAULT_REALM,
+          ServerConfig.SASL_PROPERTIES,
+          rpcAuthMethod.createCallbackHandler());
 
-        transportFactory = transFactory;
-      }
+      transportFactory = transFactory;
     } else {
       transportFactory = new TTransportFactory();
     }
@@ -245,18 +248,6 @@ public class SentryService implements Callable {
     thriftServer = new TThreadPoolServer(args);
     LOGGER.info("Serving on " + address);
     thriftServer.serve();
-  }
-
-  private CallbackHandler createCallbackHandler(RpcAuthMethod authMethod, final UserGroupInformation realUgi) {
-    try {
-      Method method = authMethod.getClass().getDeclaredMethod("createCallbackHandler");
-      return (CallbackHandler) method.invoke(authMethod);
-    } catch (Exception e) {
-      LOGGER.warn("Exception during attempt to invoke createCallbackHandler method", e);
-      String mechanism = authMethod.getMechanismName();
-      if (AuthMethod.KERBEROS.getMechanismName().equals(mechanism)) return new SaslRpcServer.SaslGssCallbackHandler();
-      return new MaprSaslCallbackHandler(realUgi.getSubject(), realUgi.getUserName());
-    }
   }
 
   public InetSocketAddress getAddress() {
