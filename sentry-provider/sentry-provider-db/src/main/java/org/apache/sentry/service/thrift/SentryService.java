@@ -85,12 +85,13 @@ public class SentryService implements Callable {
   private final String keytab;
   private final ExecutorService serviceExecutor;
   private Future future;
+  UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
 
   private TServer thriftServer;
   private static int port;
   private Status status;
 
-  public SentryService(Configuration conf) {
+  public SentryService(Configuration conf) throws IOException {
     this.conf = conf;
     port = conf
         .getInt(ServerConfig.RPC_PORT, ServerConfig.RPC_PORT_DEFAULT);
@@ -104,8 +105,16 @@ public class SentryService implements Callable {
     other = ServerConfig.SECURITY_MODE_OTHER.equalsIgnoreCase(
         conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
 
+    RpcAuthMethod rpcAuthMethod = RpcAuthRegistry.getAuthMethod(ugi.getAuthenticationMethod());
+
     if (other) {
-      kerberos = false;
+      kerberos = KerberosConfiguration.checkIsKerberos(rpcAuthMethod);
+
+      if (kerberos) {
+        LOGGER.warn("Probably, your configuration is wrong. You should set 'sentry.service.security.mode'" +
+                    "to 'kerberos' if you use Kerberos authentication mechanism");
+        other = false;
+      }
     } else {
       kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
           conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
@@ -226,8 +235,7 @@ public class SentryService implements Callable {
           ServerConfig.SASL_PROPERTIES, new GSSCallback(conf));
       transportFactory = saslTransportFactory;
     } else if (other) {
-      final UserGroupInformation realUgi = UserGroupInformation.getCurrentUser();
-      RpcAuthMethod rpcAuthMethod = RpcAuthRegistry.getAuthMethod(realUgi.getAuthenticationMethod());
+      RpcAuthMethod rpcAuthMethod = RpcAuthRegistry.getAuthMethod(ugi.getAuthenticationMethod());
       TSaslServerTransport.Factory transFactory = new TSaslServerTransport.Factory();
 
       transFactory.addServerDefinition(rpcAuthMethod.getMechanismName(),
