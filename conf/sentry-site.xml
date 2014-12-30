@@ -22,7 +22,7 @@
     <property>
         <name>sentry.service.security.mode</name>
         <value>none</value>
-        <description>Options: kerberos, none.  Authentication mode for Sentry service. Currently supports Kerberos and trusted mode </description>
+        <description>Options: kerberos, other, none.  Authentication mode for Sentry service.</description>
     </property>
 
     <property>

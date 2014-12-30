@@ -26,6 +26,7 @@ import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.security.PrivilegedExceptionAction;
 import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -44,6 +45,9 @@ import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.hadoop.security.SecurityUtil;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.rpcauth.RpcAuthMethod;
+import org.apache.hadoop.security.rpcauth.RpcAuthRegistry;
 import org.apache.sentry.Command;
 import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -56,6 +60,7 @@ import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TServerTransport;
 import org.apache.thrift.transport.TTransportFactory;
 import org.mortbay.log.Log;
+import org.apache.thrift.transport.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,16 +81,19 @@ public class SentryService implements Callable {
   private final int maxThreads;
   private final int minThreads;
   private boolean kerberos;
+  private boolean other;
   private final String principal;
   private final String[] principalParts;
   private final String keytab;
   private final ExecutorService serviceExecutor;
   private Future future;
+  UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+
   private TServer thriftServer;
   private static int port;
   private Status status;
 
-  public SentryService(Configuration conf) {
+  public SentryService(Configuration conf) throws IOException {
     this.conf = conf;
     port = conf
         .getInt(ServerConfig.RPC_PORT, ServerConfig.RPC_PORT_DEFAULT);
@@ -96,8 +104,24 @@ public class SentryService implements Callable {
         conf.get(ServerConfig.RPC_ADDRESS, ServerConfig.RPC_ADDRESS_DEFAULT),
         port);
     LOGGER.info("Configured on address " + address);
-    kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
+    other = ServerConfig.SECURITY_MODE_OTHER.equalsIgnoreCase(
         conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
+
+    RpcAuthMethod rpcAuthMethod = RpcAuthRegistry.getAuthMethod(ugi.getAuthenticationMethod());
+
+    if (other) {
+      kerberos = KerberosConfiguration.checkIsKerberos(rpcAuthMethod);
+
+      if (kerberos) {
+        LOGGER.warn("Probably, your configuration is wrong. You should set 'sentry.service.security.mode'" +
+                    "to 'kerberos' if you use Kerberos authentication mechanism");
+        other = false;
+      }
+    } else {
+      kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
+          conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
+    }
+
     maxThreads = conf.getInt(ServerConfig.RPC_MAX_THREADS,
         ServerConfig.RPC_MAX_THREADS_DEFAULT);
     minThreads = conf.getInt(ServerConfig.RPC_MIN_THREADS,
@@ -201,6 +225,17 @@ public class SentryService implements Callable {
           .getMechanismName(), principalParts[0], principalParts[1],
           ServerConfig.SASL_PROPERTIES, new GSSCallback(conf));
       transportFactory = saslTransportFactory;
+    } else if (other) {
+      RpcAuthMethod rpcAuthMethod = RpcAuthRegistry.getAuthMethod(ugi.getAuthenticationMethod());
+      TSaslServerTransport.Factory transFactory = new TSaslServerTransport.Factory();
+
+      transFactory.addServerDefinition(rpcAuthMethod.getMechanismName(),
+          null,
+          SaslRpcServer.SASL_DEFAULT_REALM,
+          ServerConfig.SASL_PROPERTIES,
+          rpcAuthMethod.createCallbackHandler());
+
+      transportFactory = transFactory;
     } else {
       transportFactory = new TTransportFactory();
     }

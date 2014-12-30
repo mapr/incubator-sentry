@@ -17,7 +17,11 @@
  */
 package org.apache.sentry.service.thrift;
 
+import org.apache.hadoop.security.SaslRpcServer;
+import org.apache.hadoop.security.rpcauth.RpcAuthMethod;
+
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -102,6 +106,10 @@ public class KerberosConfiguration extends javax.security.auth.login.Configurati
         new AppConfigurationEntry(getKrb5LoginModuleName(),
             AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
             options)};
+  }
+
+  public static boolean checkIsKerberos(RpcAuthMethod rpcAuthMethod) throws IOException {
+    return rpcAuthMethod.getMechanismName().equals(SaslRpcServer.AuthMethod.KERBEROS.getMechanismName());
   }
 }
 

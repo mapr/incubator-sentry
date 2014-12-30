@@ -68,7 +68,7 @@ limitations under the License.
     <derby.version>10.10.2.0</derby.version>
     <commons-cli.version>1.2</commons-cli.version>
     <hive.version>0.13.0-mapr</hive.version>
-    <hadoop.version>2.3.0</hadoop.version>
+    <hadoop.version>2.5.1-mapr-1410-SNAPSHOT</hadoop.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
     <guava.version>11.0.2</guava.version>
     <junit.version>4.9</junit.version>
@@ -616,25 +616,6 @@ limitations under the License.
       <snapshots>
          <enabled>true</enabled>
       </snapshots>
-    </repository>
-    <repository>
-      <id>cdh.repo</id>
-      <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
-      <name>Cloudera Repositories</name>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>cdh.snapshots.repo</id>
-      <url>https://repository.cloudera.com/artifactory/libs-snapshot-local</url>
-      <name>Cloudera Snapshots Repository</name>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
     </repository>
     <repository>
       <id>apache</id>

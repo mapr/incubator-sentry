@@ -33,11 +33,14 @@ import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.rpcauth.RpcAuthMethod;
+import org.apache.hadoop.security.rpcauth.RpcAuthRegistry;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
+import org.apache.sentry.service.thrift.KerberosConfiguration;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -57,12 +60,14 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import sun.security.jgss.spi.MechanismFactory;
 
 public class SentryPolicyServiceClient {
 
   private final Configuration conf;
   private final InetSocketAddress serverAddress;
   private final boolean kerberos;
+  private boolean other;
   private final String[] serverPrincipalParts;
   private SentryPolicyService.Client client;
   private TTransport transport;
@@ -128,10 +133,33 @@ public class SentryPolicyServiceClient {
                            ClientConfig.SERVER_RPC_PORT, ClientConfig.SERVER_RPC_PORT_DEFAULT));
     this.connectionTimeout = conf.getInt(ClientConfig.SERVER_RPC_CONN_TIMEOUT,
                                          ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
-    kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
-        conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
+
+    other = ServerConfig.SECURITY_MODE_OTHER.equalsIgnoreCase(
+            conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
+
+    UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+    RpcAuthMethod rpcAuthMethod = RpcAuthRegistry.getAuthMethod(ugi.getAuthenticationMethod());
+
+    if (other) {
+      kerberos = KerberosConfiguration.checkIsKerberos(rpcAuthMethod);
+
+      if (kerberos) {
+        LOGGER.warn("Probably, your configuration is wrong. You should set 'sentry.service.security.mode'" +
+                    "to 'kerberos' if you use Kerberos authentication mechanism");
+        other = false;
+      }
+    }
+    else {
+      kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
+              conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
+    }
+
     transport = new TSocket(serverAddress.getHostName(),
         serverAddress.getPort(), connectionTimeout);
+
+    boolean wrapUgi = "true".equalsIgnoreCase(conf
+        .get(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "true"));
+
     if (kerberos) {
       String serverPrincipal = Preconditions.checkNotNull(conf.get(ServerConfig.PRINCIPAL), ServerConfig.PRINCIPAL + " is required");
 
@@ -142,11 +170,16 @@ public class SentryPolicyServiceClient {
       serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
       Preconditions.checkArgument(serverPrincipalParts.length == 3,
            "Kerberos principal should have 3 parts: " + serverPrincipal);
-      boolean wrapUgi = "true".equalsIgnoreCase(conf
-          .get(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "true"));
       transport = new UgiSaslClientTransport(AuthMethod.KERBEROS.getMechanismName(),
           null, serverPrincipalParts[0], serverPrincipalParts[1],
           ClientConfig.SASL_PROPERTIES, null, transport, wrapUgi);
+    } else if (other) {
+      serverPrincipalParts = null;
+
+      transport = new UgiSaslClientTransport(rpcAuthMethod.getMechanismName(), null,
+          null, SaslRpcServer.SASL_DEFAULT_REALM, ClientConfig.SASL_PROPERTIES,
+          null, transport, wrapUgi);
+
     } else {
       serverPrincipalParts = null;
     }
