@@ -23,6 +23,37 @@ PATH_BIN=`dirname "${BASH_SOURCE-$0}"`
 SENTRY_PATH=$PATH_BIN/..
 PATH_LOG=$SENTRY_PATH/logs
 PATH_CONF=$SENTRY_PATH/conf
+WARDEN_SENTRY_CONF=/opt/mapr/conf/conf.d/warden.sentry.conf
+SENTRY_THRIFT_PID_FILE=/opt/mapr/pid/sentry-thrift.pid
+DEFAULT_SENTRY_PORT=8038
+
+find_sentry_port(){
+if [ -f $WARDEN_SENTRY_CONF ]; then
+    local SENTRY_PORT=`sed -n "/service.port=/p" $WARDEN_SENTRY_CONF`
+    echo `echo $SENTRY_PORT | awk -F "=" '{print $2}'`
+else
+    echo $DEFAULT_SENTRY_PORT
+fi
+}
+
+find_sentry_pid(){
+local SENTRY_PORT=$(find_sentry_port)
+local SENTRY_PID=`lsof -i:$SENTRY_PORT | awk '{print $2}'`
+local SENTRY_PID=`echo $SENTRY_PID | awk '{print $2}'`
+if [ -n "$SENTRY_PID" ]; then
+    echo $SENTRY_PID
+    else echo 0
+fi
+}
+
+find_sentry_thrift_pid(){
+if [ -f $SENTRY_THRIFT_PID_FILE ]; then
+    echo `cat $SENTRY_THRIFT_PID_FILE`
+else
+    echo 0
+fi
+}
+
 if [ $# -lt 1 ]; then
     echo $usage
     exit 1
@@ -52,9 +83,9 @@ case $COMMAND in
      fi
  ;;
  stop)
-     SENTRY_PROCESS_ID=`cat /opt/mapr/pid/sentry.pid`
-     SENTRY_THRIFT_PROCESS_ID=`cat /opt/mapr/pid/sentry-thrift.pid`
-     if [ -n "$SENTRY_PROCESS_ID" -a $SENTRY_PROCESS_ID -gt 0 -a $SENTRY_THRIFT_PROCESS_ID -gt 0 ];then
+     SENTRY_PROCESS_ID=$(find_sentry_pid)
+     SENTRY_THRIFT_PROCESS_ID=$(find_sentry_thrift_pid)
+     if [ $SENTRY_PROCESS_ID -gt 0 -a $SENTRY_THRIFT_PROCESS_ID -gt 0 ];then
          kill -9 $SENTRY_PROCESS_ID
          kill -9 $SENTRY_THRIFT_PROCESS_ID
          exit 0
@@ -63,7 +94,13 @@ case $COMMAND in
      fi
  ;;
  start)
-     echo " `date +%m.%d-%H:%M:%S` INFO : Process starting for sentry " >> $PATH_LOG/daemons.txt
-     ${PATH_BIN}/sentry --log4jConf ${PATH_CONF}/log4j.properties --command service -c ${CONF_FILE}
-     echo " `date +%d-%H.%M.%S` INFO : Process started for sentry " >> $PATH_LOG/daemons.txt
+     SENTRY_PROCESS_ID=$(find_sentry_pid)
+     SENTRY_THRIFT_PROCESS_ID=$(find_sentry_thrift_pid)
+     if [ $SENTRY_PROCESS_ID -gt 0 -a $SENTRY_THRIFT_PROCESS_ID -gt 0 ];then
+         echo "Sentry is already running with PID $SENTRY_PROCESS_ID. Stop it first."
+     else
+         echo " `date +%m.%d-%H:%M:%S` INFO : Process starting for sentry " >> $PATH_LOG/daemons.txt
+         ${PATH_BIN}/sentry --log4jConf ${PATH_CONF}/log4j.properties --command service -c ${CONF_FILE}
+         echo " `date +%d-%H.%M.%S` INFO : Process started for sentry " >> $PATH_LOG/daemons.txt
+     fi
 esac
