@@ -25,8 +25,6 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.security.PrivilegedExceptionAction;
-import java.util.HashSet;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -349,8 +347,7 @@ public class SentryService implements Callable {
         }
       });
 
-      PidUtils.createSentryServicePidFile();
-      PidUtils.createSentryThriftServicePidFile(port);
+      PidUtils.createSentryServicePidFile(port);
       // Let's wait on the service to stop
       try {
         LOGGER.info("Waiting on future.get()");

@@ -34,44 +34,28 @@ public final class PidUtils {
     private static final String MAPR_HOME_PATH_DEFAULT = "/opt/mapr";
     private static final String MAPR_PID_DEFAULT = "pid";
     private static final String SENTRY_PID = "sentry.pid";
-    private static final String SENTRY_THRIFT_PID = "sentry-thrift.pid";
 
-    public static void createSentryServicePidFile(){
+
+    public static void createSentryServicePidFile(int port){
       LOGGER.info("Creating sentry pid file...");
       File sentryPidFile = new File(MAPR_HOME_PATH_DEFAULT + "/" + MAPR_PID_DEFAULT + "/" + SENTRY_PID);
       if(sentryPidFile.exists()){
           removeFile(sentryPidFile);
       }
-      int sentryServicePid = findSentryServicePid();
+      int sentryServicePid = findSentryServicePid(port);
       try {
         FileWriter fw = new FileWriter(sentryPidFile);
         fw.write(Integer.toString(sentryServicePid));
         fw.close();
       } catch (IOException e) {
-          LOGGER.error("IO Exception while trying to write to: " + sentryPidFile, e);
+        LOGGER.error("IO Exception while trying to write to: " + sentryPidFile, e);
       }
       LOGGER.info("Sentry pid = " + sentryServicePid);
     }
 
-    public static void createSentryThriftServicePidFile(int port){
-      LOGGER.info("Creating sentry-thrift pid file...");
-      File sentryThriftPidFile = new File(MAPR_HOME_PATH_DEFAULT + "/" + MAPR_PID_DEFAULT + "/" + SENTRY_THRIFT_PID);
-      if(sentryThriftPidFile.exists()){
-          removeFile(sentryThriftPidFile);
-      }
-      int sentryThriftServicePid = findSentryThriftServicePid(port);
-      try {
-        FileWriter fw = new FileWriter(sentryThriftPidFile);
-        fw.write(Integer.toString(sentryThriftServicePid));
-        fw.close();
-      } catch (IOException e) {
-        LOGGER.error("IO Exception while trying to write to: " + sentryThriftPidFile, e);
-      }
-      LOGGER.info("Sentry-thrift pid = " + sentryThriftServicePid);
-    }
-
-    private static int findSentryServicePid(){
-      String [] commandArray = new String [] {"pgrep", "sentry"};
+    private static int findSentryServicePid(int port){
+      String [] commandArray = new String [] {"/bin/bash","-c","netstat -nltp | grep " + Integer.toString(port) +
+              "|awk -F \" \" '{print $7}'|awk -F \"/\" '{print $1}'"};
       int i = 0;
       int sentryServicePid;
       do {
@@ -80,23 +64,8 @@ public final class PidUtils {
         i++;
         waitForTimeout(ONE_SECOND);
       }
-      while (sentryServicePid < 0 && i < RETRY_COUNT);
+      while (sentryServicePid < 0 && i <= RETRY_COUNT);
       return sentryServicePid;
-    }
-
-    private static int findSentryThriftServicePid(int port){
-      String [] commandArray = new String [] {"/bin/bash","-c","netstat -nltp | grep " + Integer.toString(port) +
-              "|awk -F \" \" '{print $7}'|awk -F \"/\" '{print $1}'"};
-      int i = 0;
-      int sentryThriftServicePid;
-      do {
-        LOGGER.info("Attempt " + Integer.toString(i) + ". Getting PID for sentry-thrift.");
-        sentryThriftServicePid = execBashReturnInt(commandArray);
-        i++;
-        waitForTimeout(ONE_SECOND);
-      }
-      while (sentryThriftServicePid < 0 && i <= RETRY_COUNT);
-      return sentryThriftServicePid;
     }
 
     private static int execBashReturnInt(String[] cmdarray){
