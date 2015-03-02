@@ -71,9 +71,9 @@ fi
 
 case $COMMAND in
  status)
-     PROCESS_ID=`ps -aux|grep "sentry"|grep "start"| awk -F " " '{print $2}'`
-     if [ -n "$PROCESS_ID" ];then
-         echo Sentry is running as process $PROCESS_ID.
+     SENTRY_PROCESS_ID=$(find_sentry_pid)
+     if [ $SENTRY_PROCESS_ID -gt 0 ];then
+         echo Sentry is running as process $SENTRY_PROCESS_ID.
          echo " `date +%m.%d-%H:%M:%S` INFO : Process checked for sentry : TRUE" >> $PATH_LOG/daemons.txt
          exit 0;
      else
@@ -84,10 +84,8 @@ case $COMMAND in
  ;;
  stop)
      SENTRY_PROCESS_ID=$(find_sentry_pid)
-     SENTRY_THRIFT_PROCESS_ID=$(find_sentry_thrift_pid)
-     if [ $SENTRY_PROCESS_ID -gt 0 -a $SENTRY_THRIFT_PROCESS_ID -gt 0 ];then
+     if [ $SENTRY_PROCESS_ID -gt 0 ];then
          kill -9 $SENTRY_PROCESS_ID
-         kill -9 $SENTRY_THRIFT_PROCESS_ID
          exit 0
      else
          echo Sentry is not running.
@@ -95,12 +93,11 @@ case $COMMAND in
  ;;
  start)
      SENTRY_PROCESS_ID=$(find_sentry_pid)
-     SENTRY_THRIFT_PROCESS_ID=$(find_sentry_thrift_pid)
-     if [ $SENTRY_PROCESS_ID -gt 0 -a $SENTRY_THRIFT_PROCESS_ID -gt 0 ];then
+     if [ $SENTRY_PROCESS_ID -gt 0 ];then
          echo "Sentry is already running with PID $SENTRY_PROCESS_ID. Stop it first."
      else
          echo " `date +%m.%d-%H:%M:%S` INFO : Process starting for sentry " >> $PATH_LOG/daemons.txt
-         ${PATH_BIN}/sentry --log4jConf ${PATH_CONF}/log4j.properties --command service -c ${CONF_FILE}
+         nohup ${PATH_BIN}/sentry --log4jConf ${PATH_CONF}/log4j.properties --command service -c ${CONF_FILE} > $PATH_LOG/nohup.out 2>&1 </dev/null &
          echo " `date +%d-%H.%M.%S` INFO : Process started for sentry " >> $PATH_LOG/daemons.txt
      fi
 esac
