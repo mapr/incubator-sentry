@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-usage="Usage: sentry-daemon.sh \
+USAGE="Usage: sentry-daemon.sh \
  (start <configuration file>|stop|status)"
 
 PATH_BIN=`dirname "${BASH_SOURCE-$0}"`
@@ -38,24 +38,15 @@ fi
 
 find_sentry_pid(){
 local SENTRY_PORT=$(find_sentry_port)
-local SENTRY_PID=`lsof -i:$SENTRY_PORT | awk '{print $2}'`
-local SENTRY_PID=`echo $SENTRY_PID | awk '{print $2}'`
+local SENTRY_PID=`lsof -i:$SENTRY_PORT | grep LISTEN | awk '{print $2}'`
 if [ -n "$SENTRY_PID" ]; then
     echo $SENTRY_PID
     else echo 0
 fi
 }
 
-find_sentry_thrift_pid(){
-if [ -f $SENTRY_THRIFT_PID_FILE ]; then
-    echo `cat $SENTRY_THRIFT_PID_FILE`
-else
-    echo 0
-fi
-}
-
 if [ $# -lt 1 ]; then
-    echo $usage
+    echo $USAGE
     exit 1
 fi
 
@@ -64,7 +55,7 @@ CONF_FILE=$2
 
 if [[ $COMMAND == 'start' && -z $CONF_FILE ]]; then
     echo 'Error: No configuration file is set!'
-    echo $usage
+    echo $USAGE
     exit 1
 fi
 
