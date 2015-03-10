@@ -31,8 +31,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
-import javax.security.auth.Subject;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -40,8 +38,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
-import org.apache.hadoop.security.SaslRpcServer;
-import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.rpcauth.RpcAuthMethod;
@@ -49,21 +45,20 @@ import org.apache.hadoop.security.rpcauth.RpcAuthRegistry;
 import org.apache.sentry.Command;
 import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.service.thrift.shim.HadoopThriftAuthBridge;
+import org.apache.sentry.service.thrift.shim.ShimLoader;
 import org.apache.thrift.TMultiplexedProcessor;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TThreadPoolServer;
-import org.apache.thrift.transport.TSaslServerTransport;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TServerTransport;
 import org.apache.thrift.transport.TTransportFactory;
-import org.mortbay.log.Log;
-import org.apache.thrift.transport.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 
 public class SentryService implements Callable {
 
@@ -78,14 +73,9 @@ public class SentryService implements Callable {
   private final InetSocketAddress address;
   private final int maxThreads;
   private final int minThreads;
-  private boolean kerberos;
-  private boolean other;
-  private final String principal;
-  private final String[] principalParts;
-  private final String keytab;
+  private boolean isSecured;
   private final ExecutorService serviceExecutor;
   private Future future;
-  UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
 
   private TServer thriftServer;
   private static int port;
@@ -102,51 +92,14 @@ public class SentryService implements Callable {
         conf.get(ServerConfig.RPC_ADDRESS, ServerConfig.RPC_ADDRESS_DEFAULT),
         port);
     LOGGER.info("Configured on address " + address);
-    other = ServerConfig.SECURITY_MODE_OTHER.equalsIgnoreCase(
-        conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
-
-    RpcAuthMethod rpcAuthMethod = RpcAuthRegistry.getAuthMethod(ugi.getAuthenticationMethod());
-
-    if (other) {
-      kerberos = KerberosConfiguration.checkIsKerberos(rpcAuthMethod);
-
-      if (kerberos) {
-        LOGGER.warn("Probably, your configuration is wrong. You should set 'sentry.service.security.mode'" +
-                    "to 'kerberos' if you use Kerberos authentication mechanism");
-        other = false;
-      }
-    } else {
-      kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
-          conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
-    }
+    isSecured = !ServerConfig.SECURITY_MODE_NONE.equalsIgnoreCase(
+        conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE).trim());
 
     maxThreads = conf.getInt(ServerConfig.RPC_MAX_THREADS,
         ServerConfig.RPC_MAX_THREADS_DEFAULT);
     minThreads = conf.getInt(ServerConfig.RPC_MIN_THREADS,
         ServerConfig.RPC_MIN_THREADS_DEFAULT);
-    if (kerberos) {
-      // Use Hadoop libraries to translate the _HOST placeholder with actual hostname
-      try {
-        String rawPrincipal = Preconditions.checkNotNull(conf.get(ServerConfig.PRINCIPAL), ServerConfig.PRINCIPAL + " is required");
-        principal = SecurityUtil.getServerPrincipal(rawPrincipal, address.getAddress());
-      } catch(IOException io) {
-        throw new RuntimeException("Can't translate kerberos principal'", io);
-      }
-      LOGGER.info("Using kerberos principal: " + principal);
 
-      principalParts = SaslRpcServer.splitKerberosName(principal);
-      Preconditions.checkArgument(principalParts.length == 3,
-          "Kerberos principal should have 3 parts: " + principal);
-      keytab = Preconditions.checkNotNull(conf.get(ServerConfig.KEY_TAB),
-          ServerConfig.KEY_TAB + " is required");
-      File keytabFile = new File(keytab);
-      Preconditions.checkState(keytabFile.isFile() && keytabFile.canRead(),
-          "Keytab " + keytab + " does not exist or is not readable.");
-    } else {
-      principal = null;
-      principalParts = null;
-      keytab = null;
-    }
     serviceExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
       private int count = 0;
 
@@ -161,29 +114,8 @@ public class SentryService implements Callable {
 
   @Override
   public String call() throws Exception {
-    SentryKerberosContext kerberosContext = null;
-    try {
-      if (kerberos) {
-        kerberosContext = new SentryKerberosContext(principal, keytab, true);
-        Subject.doAs(kerberosContext.getSubject(), new PrivilegedExceptionAction<Void>() {
-          @Override
-          public Void run() throws Exception {
-            runServer();
-            return null;
-          }
-        });
-      } else {
-        runServer();
-      }
-    } catch (Exception t) {
-      LOGGER.error("Error starting server", t);
-      throw new Exception("Error starting server", t);
-    } finally {
-      if (kerberosContext != null) {
-        kerberosContext.shutDown();
-      }
-      status = Status.NOT_STARTED;
-    }
+    runServer();
+
     return null;
   }
 
@@ -215,28 +147,18 @@ public class SentryService implements Callable {
       throw new IllegalStateException(
           "Failed to register any processors from " + processorFactories);
     }
+    HadoopThriftAuthBridge hadoopThriftAuthBridge = ShimLoader.getHadoopThriftAuthBridge();
     TServerTransport serverTransport = new TServerSocket(address);
-    TTransportFactory transportFactory = null;
-    if (kerberos) {
-      TSaslServerTransport.Factory saslTransportFactory = new TSaslServerTransport.Factory();
-      saslTransportFactory.addServerDefinition(AuthMethod.KERBEROS
-          .getMechanismName(), principalParts[0], principalParts[1],
-          ServerConfig.SASL_PROPERTIES, new GSSCallback(conf));
-      transportFactory = saslTransportFactory;
-    } else if (other) {
-      RpcAuthMethod rpcAuthMethod = RpcAuthRegistry.getAuthMethod(ugi.getAuthenticationMethod());
-      TSaslServerTransport.Factory transFactory = new TSaslServerTransport.Factory();
+    TTransportFactory transportFactory;
+    String principal = conf.get(ServerConfig.PRINCIPAL, "");
+    String keytab = conf.get(ServerConfig.KEY_TAB, "");
 
-      transFactory.addServerDefinition(rpcAuthMethod.getMechanismName(),
-          null,
-          SaslRpcServer.SASL_DEFAULT_REALM,
-          ServerConfig.SASL_PROPERTIES,
-          rpcAuthMethod.createCallbackHandler());
-
-      transportFactory = transFactory;
+    if (isSecured) {
+      transportFactory = hadoopThriftAuthBridge.createServer(keytab, principal).createTransportFactory(conf);
     } else {
       transportFactory = new TTransportFactory();
     }
+
     TThreadPoolServer.Args args = new TThreadPoolServer.Args(
         serverTransport).processor(processor)
         .transportFactory(transportFactory)

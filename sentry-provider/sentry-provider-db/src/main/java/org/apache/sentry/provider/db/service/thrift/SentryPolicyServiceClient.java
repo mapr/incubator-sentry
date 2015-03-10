@@ -29,23 +29,19 @@ import javax.security.auth.callback.CallbackHandler;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
-import org.apache.hadoop.security.SaslRpcServer;
-import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
-import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.security.rpcauth.RpcAuthMethod;
-import org.apache.hadoop.security.rpcauth.RpcAuthRegistry;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
-import org.apache.sentry.service.thrift.KerberosConfiguration;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
 import org.apache.sentry.service.thrift.Status;
+import org.apache.sentry.service.thrift.shim.HadoopThriftAuthBridge;
+import org.apache.sentry.service.thrift.shim.ShimLoader;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TMultiplexedProtocol;
@@ -60,15 +56,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import sun.security.jgss.spi.MechanismFactory;
 
 public class SentryPolicyServiceClient {
 
   private final Configuration conf;
   private final InetSocketAddress serverAddress;
-  private final boolean kerberos;
-  private boolean other;
-  private final String[] serverPrincipalParts;
   private SentryPolicyService.Client client;
   private TTransport transport;
   private int connectionTimeout;
@@ -134,60 +126,31 @@ public class SentryPolicyServiceClient {
     this.connectionTimeout = conf.getInt(ClientConfig.SERVER_RPC_CONN_TIMEOUT,
                                          ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
 
-    other = ServerConfig.SECURITY_MODE_OTHER.equalsIgnoreCase(
-            conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
+    boolean other = ServerConfig.SECURITY_MODE_OTHER.equalsIgnoreCase(
+            conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE).trim());
+    boolean kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
+              conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE).trim());
 
-    UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
-    RpcAuthMethod rpcAuthMethod = RpcAuthRegistry.getAuthMethod(ugi.getAuthenticationMethod());
-
-    if (other) {
-      kerberos = KerberosConfiguration.checkIsKerberos(rpcAuthMethod);
-
-      if (kerberos) {
-        LOGGER.warn("Probably, your configuration is wrong. You should set 'sentry.service.security.mode'" +
-                    "to 'kerberos' if you use Kerberos authentication mechanism");
-        other = false;
-      }
-    }
-    else {
-      kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
-              conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
-    }
-
+    HadoopThriftAuthBridge hadoopThriftAuthBridge = ShimLoader.getHadoopThriftAuthBridge();
     transport = new TSocket(serverAddress.getHostName(),
         serverAddress.getPort(), connectionTimeout);
 
-    boolean wrapUgi = "true".equalsIgnoreCase(conf
-        .get(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "true"));
+    boolean wrapUgi = "true".equalsIgnoreCase(conf.get(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "true"));
 
     if (kerberos) {
       String serverPrincipal = Preconditions.checkNotNull(conf.get(ServerConfig.PRINCIPAL), ServerConfig.PRINCIPAL + " is required");
-
-      // Resolve server host in the same way as we are doing on server side
-      serverPrincipal = SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
-      LOGGER.debug("Using server kerberos principal: " + serverPrincipal);
-
-      serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
-      Preconditions.checkArgument(serverPrincipalParts.length == 3,
-           "Kerberos principal should have 3 parts: " + serverPrincipal);
-      transport = new UgiSaslClientTransport(AuthMethod.KERBEROS.getMechanismName(),
-          null, serverPrincipalParts[0], serverPrincipalParts[1],
-          ClientConfig.SASL_PROPERTIES, null, transport, wrapUgi);
+      transport = hadoopThriftAuthBridge.createClient().createClientTransport(serverPrincipal,
+              serverAddress.getHostName(), transport, wrapUgi);
     } else if (other) {
-      serverPrincipalParts = null;
-
-      transport = new UgiSaslClientTransport(rpcAuthMethod.getMechanismName(), null,
-          null, SaslRpcServer.SASL_DEFAULT_REALM, ClientConfig.SASL_PROPERTIES,
-          null, transport, wrapUgi);
-
-    } else {
-      serverPrincipalParts = null;
+      transport = hadoopThriftAuthBridge.createClient().createClientTransport(null, null, transport, wrapUgi);
     }
+
     try {
       transport.open();
     } catch (TTransportException e) {
       throw new IOException("Transport exception while opening transport: " + e.getMessage(), e);
     }
+
     LOGGER.debug("Successfully opened transport: " + transport + " to " + serverAddress);
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
       new TBinaryProtocol(transport),
