@@ -68,7 +68,7 @@ limitations under the License.
     <derby.version>10.10.2.0</derby.version>
     <commons-cli.version>1.2</commons-cli.version>
     <hive.version>0.13.0-mapr</hive.version>
-    <hadoop.version>2.5.1-mapr-1410-SNAPSHOT</hadoop.version>
+    <hadoop.version>2.5.1-mapr-1501</hadoop.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
     <guava.version>11.0.2</guava.version>
     <junit.version>4.9</junit.version>
