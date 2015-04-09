@@ -76,13 +76,6 @@ fi
 
 DB_TYPE=$1
 
-if [[ "$DB_TYPE" != "oracle" && "$DB_TYPE" != "mysql"  && "$DB_TYPE" != "postgres" ]]; then
-    echo "ERROR: Incorrect DB type : $DB_TYPE. Possible values are oracle, mysql, postgres."
-    echo "$USAGE"
-    exit 1
-fi
-
-
 if [[ "$PARAMETERS_COUNT" = 1 ]]; then
     if [[ "$DB_TYPE" = "oracle"  || "$DB_TYPE" = "mysql" ]]; then
         echo "ERROR: You should specify administrator username in case you work with MySQL or Oracle."
@@ -143,7 +136,7 @@ case $DB_TYPE in
             echo 'ERROR: No DB storage has been generated.'
            exit 1
         fi
-;;
+        ;;
 
     oracle)
         sqlplus /nolog << EOF
@@ -158,10 +151,9 @@ EOF
         ;;
 
     *)
-        echo "ERROR: Please specify correct database type. Currently supports Oracle, MySQL and Postgres"
-        echo "ERROR: You should specify administrator username in case you work with MySQL or Oracle."
+        echo "ERROR: Incorrect DB type : $DB_TYPE. Possible values are oracle, mysql, postgres."
         echo "$USAGE"
-        exit 2
+        exit 1
 esac
 
 echo "Init sentry schema"
