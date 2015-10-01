@@ -84,7 +84,7 @@ Release Notes - Sentry - Version 1.4.0
     * [SENTRY-254] - Privilege name in provider db has a limit of length 128 which might be very low for long uris.
     * [SENTRY-255] - Revoke on Server privilege fails
     * [SENTRY-256] - Fix TestDbEndToEnd.testEndToEnd1
-    * [SENTRY-257] - Upgrade master to use version 1.4.0-incubating-SNAPSHOT
+    * [SENTRY-257] - Upgrade master to use version 1.4.0-mapr-1509-SNAPSHOT
     * [SENTRY-259] - Implement Hive metastore plugin
     * [SENTRY-260] - Add support to use DB2  as database for sentry metastore
     * [SENTRY-262] - Updating patch for SENTRY-178
