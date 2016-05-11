@@ -27,6 +27,13 @@ git@github.com:apache/flume.git git@github.com:mapr/flume.git flume
 git@github.com:apache/flume.git git@github.com:mapr/private-flume.git private-flume
 git@github.com:grafana/grafana.git git@github.com:mapr/grafana.git grafana
 git@github.com:grafana/grafana.git git@github.com:mapr/private-grafana.git private-grafana
+git@github.com:collectd/collectd.git git@github.com:mapr/private-collectd.git private-collectd
+git@github.com:egineering-llc/collectd-fast-jmx.git git@github.com:mapr/private-collectd-fast-jmx.git private-collectd-fast-jmx
+git@github.com:fluent/fluentd.git git@github.com:mapr/private-fluentd.git private-fluentd
+git@github.com:elastic/elasticsearch.git git@github.com:mapr/private-elasticsearch.git private-elasticsearch
+git@github.com:elastic/kibana.git git@github.com:mapr/private-kibana.git private-kibana
+git@github.com/elastic/curator.git git@github.com:mapr/private-curator private-curator
+git@github.com:phusion/traveling-ruby.git git@github.com:mapr/private-traveling-ruby.git private-traveling-ruby
 https://git-wip-us.apache.org/repos/asf/hadoop.git git@github.com:mapr/private-hadoop-common.git private-hadoop-common
 https://git-wip-us.apache.org/repos/asf/hadoop.git git@github.com:mapr/hadoop-common.git hadoop-common
 git@github.com:apache/hbase.git git@github.com:mapr/hbase.git hbase
