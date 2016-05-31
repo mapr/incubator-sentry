@@ -126,6 +126,12 @@ do
 
     git push --all origin
     git push --tags origin
+
+    git tag | sort | while read GIT_TAG ; do
+        echo "GIT_TAG=${GIT_TAG}"
+        git push origin ${GIT_TAG} --force
+    done
+
     popd #popping WORKSPACE_REPO
 
 done #done iterating over tuples
