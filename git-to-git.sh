@@ -61,6 +61,7 @@ git@github.com:OpenTSDB/opentsdb.git git@github.com:mapr/private-opentsdb.git pr
 git@github.com:apache/pig.git git@github.com:mapr/pig.git pig
 git@github.com:apache/pig.git git@github.com:mapr/private-pig.git private-pig
 git://git.apache.org/incubator-sentry git@github.com:mapr/incubator-sentry.git incubator-sentry
+git://git.apache.org/sentry git@github.com:mapr/sentry.git sentry
 git://git.apache.org/incubator-sentry git@github.com:mapr/private-sentry.git private-sentry
 git@github.com:amplab/shark.git git@github.com:mapr/shark.git shark
 git@github.com:amplab/shark.git git@github.com:mapr/private-shark.git private-shark
