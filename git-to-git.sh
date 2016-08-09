@@ -66,6 +66,7 @@ git@github.com:apache/sentry.git git@github.com:mapr/private-sentry.git private-
 git@github.com:amplab/shark.git git@github.com:mapr/shark.git shark
 git@github.com:amplab/shark.git git@github.com:mapr/private-shark.git private-shark
 git@github.com:apache/spark.git git@github.com:mapr/spark.git spark
+git@github.com:apache/spark.git git@github.com:mapr/private-spark.git private-spark
 git@github.com:amplab/shark.git git@github.com:mapr/private-shark.git private-shark
 git@github.com:apache/sqoop.git git@github.com:mapr/sqoop.git sqoop
 git@github.com:apache/sqoop.git git@github.com:mapr/private-sqoop.git private-sqoop
