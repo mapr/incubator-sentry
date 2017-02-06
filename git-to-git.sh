@@ -51,6 +51,7 @@ git@github.com:apache/kafka.git git@github.com:mapr/private-kafka.git private-ka
 git@github.com:mongodb/libbson.git git@github.com:mapr/libbson.git libbson
 git@github.com:mongodb/libbson.git git@github.com:mapr/private-libbson.git private-libbson
 git@github.com:edenhill/librdkafka.git git@github.com:mapr/private-librdkafka.git private-librdkafka
+git@github.com:cloudera/livy.git git@github.com:mapr/private-livy.git private-livy
 git@github.com:mongodb/mongo-java-driver.git git@github.com:mapr/ebson.git ebson
 git@github.com:mongodb/mongo-java-driver.git git@github.com:mapr/private-ebson.git private-ebson
 git@github.com:apache/mahout.git git@github.com:mapr/mahout.git mahout
