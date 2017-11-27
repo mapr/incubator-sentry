@@ -82,8 +82,8 @@ git@github.com:brianfrankcooper/YCSB.git git@github.com:mapr/YCSB.git YCSB
 git@github.com:brianfrankcooper/YCSB.git git@github.com:mapr/private-YCSB.git private-YCSB
 git@github.com:apache/zookeeper.git git@github.com:mapr/zookeeper.git zookeeper
 git@github.com:apache/zookeeper.git git@github.com:mapr/private-zookeeper.git private-zookeeper
-git@github.com:swagger-api/swagger-codegen.git git@github.com:mapr/private-swagger-codegen private-swagger-codegen"
-
+git@github.com:swagger-api/swagger-codegen.git git@github.com:mapr/private-swagger-codegen.git private-swagger-codegen
+git@github.com:apache/zeppelin.git git@github.com:mapr/private-zeppelin.git private-zeppelin"
 
 echo "$TUPLES" | while read UPSTREAM_REPO DOWNSTREAM_REPO WORKSPACE_REPO
 do
