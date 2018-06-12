@@ -48,6 +48,7 @@ git@github.com:cloudera/hue.git git@github.com:mapr/hue.git hue
 git@github.com:cloudera/hue.git git@github.com:mapr/private-hue.git private-hue
 git@github.com:cloudera/impala.git git@github.com:mapr/private-impala.git private-impala
 git@github.com:apache/kafka.git git@github.com:mapr/private-kafka.git private-kafka
+git@github.com:confluentinc/ksql.git git@github.com:mapr/private-kafka-ksql.git private-kafka-ksql
 git@github.com:mongodb/libbson.git git@github.com:mapr/libbson.git libbson
 git@github.com:mongodb/libbson.git git@github.com:mapr/private-libbson.git private-libbson
 git@github.com:edenhill/librdkafka.git git@github.com:mapr/private-librdkafka.git private-librdkafka
