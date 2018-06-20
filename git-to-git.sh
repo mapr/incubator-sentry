@@ -34,6 +34,8 @@ git@github.com:elastic/elasticsearch.git git@github.com:mapr/private-elasticsear
 git@github.com:elastic/kibana.git git@github.com:mapr/private-kibana.git private-kibana
 git@github.com:elastic/curator.git git@github.com:mapr/private-curator private-curator
 git@github.com:phusion/traveling-ruby.git git@github.com:mapr/private-traveling-ruby.git private-traveling-ruby
+git@github.com:gperftools/gperftools.git git@github.com:mapr/gperftools.git gperftools
+git@github.com:gperftools/gperftools.git git@github.com:mapr/private-gperftools.git private-gperftools
 https://git-wip-us.apache.org/repos/asf/hadoop.git git@github.com:mapr/private-hadoop-common.git private-hadoop-common
 https://git-wip-us.apache.org/repos/asf/hadoop.git git@github.com:mapr/hadoop-common.git hadoop-common
 git@github.com:apache/hbase.git git@github.com:mapr/hbase.git hbase
