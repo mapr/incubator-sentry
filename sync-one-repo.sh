@@ -1,4 +1,6 @@
-#/bin/bash
+#!/usr/bin/env bash
+
+source "devops/interfaces.sh"
 
 UPSTREAM_REPO=$1
 DOWNSTREAM_REPO=$2
@@ -42,8 +44,9 @@ fi
     # 7. force-push each tag from the UPSTREAM repo to the DOWNSTREAM repo
     echo "full git-to-git in workspace $WORKSPACE_REPO"
     rm -rf $WORKSPACE_REPO
+    set -x
     git clone $UPSTREAM_REPO $WORKSPACE_REPO
-    pushd $WORKSPACE_REPO
+    cd $WORKSPACE_REPO
     echo "Now in: `pwd`"
     # the remote doesn't have to be named "downstream" but we name it so for convention
     git remote add --fetch downstream $DOWNSTREAM_REPO
@@ -79,6 +82,4 @@ fi
         echo "GIT_TAG=${GIT_TAG}"
         git push downstream ${GIT_TAG} --force
     done
-
-    popd #popping WORKSPACE_REPO
 

@@ -1,4 +1,13 @@
-#/bin/bash
+#!/usr/bin/env bash
+
+source "interfaces.sh"
+
+workspace:location() { local workspacePrefix=$1; local location=$2
+    echo "${workspacePrefix}/${location}"
+}
+
+
+gitsync:sync:all:repos() {
 
 echo "This script has a good chance of ANNIHILATING any work that was done directly on MapR's GitHub. It will not affect your workspace though, besides confronting you with conflicts from upstream."
 
@@ -7,9 +16,8 @@ git config --global core.autocrlf input
 
 # Git workspace is put on selfhosting for reducing disk usage on normal disks, and ease of changing which machine executes the script.
 # Although this causes a slight performance hit.
-GITWORKSPACE="/home/MAPRTECH/share/packages/github-sync"
+GITWORKSPACE=~/devops/shared-mapr-filesystem/share/packages/github-sync
 mkdir -pv $GITWORKSPACE
-pushd $GITWORKSPACE
 
 # Each tuple is:
 # 1. UPSTREAM repo
@@ -70,19 +78,14 @@ git@github.com:apache/pig.git git@github.com:mapr/private-pig.git private-pig
 git://git.apache.org/incubator-sentry git@github.com:mapr/incubator-sentry.git incubator-sentry
 git@github.com:apache/sentry.git git@github.com:mapr/sentry.git sentry
 git@github.com:apache/sentry.git git@github.com:mapr/private-sentry.git private-sentry
-git@github.com:amplab/shark.git git@github.com:mapr/shark.git shark
-git@github.com:amplab/shark.git git@github.com:mapr/private-shark.git private-shark
 git@github.com:apache/spark.git git@github.com:mapr/spark.git spark
 git@github.com:apache/spark.git git@github.com:mapr/private-spark.git private-spark
-git@github.com:amplab/shark.git git@github.com:mapr/private-shark.git private-shark
 git@github.com:apache/sqoop.git git@github.com:mapr/sqoop.git sqoop
 git@github.com:apache/sqoop.git git@github.com:mapr/private-sqoop.git private-sqoop
 git@github.com:apache/storm.git git@github.com:mapr/private-storm.git private-storm
 git@github.com:apache/storm.git git@github.com:mapr/incubator-storm.git incubator-storm
 git@github.com:apache/tez.git git@github.com:mapr/incubator-tez.git incubator-tez
 git@github.com:apache/tez.git git@github.com:mapr/private-tez.git private-tez
-git@github.com:apache/whirr.git git@github.com:mapr/whirr.git whirr
-git@github.com:apache/whirr.git git@github.com:mapr/private-whirr.git private-whirr
 git@github.com:brianfrankcooper/YCSB.git git@github.com:mapr/YCSB.git YCSB
 git@github.com:brianfrankcooper/YCSB.git git@github.com:mapr/private-YCSB.git private-YCSB
 git@github.com:apache/zookeeper.git git@github.com:mapr/zookeeper.git zookeeper
@@ -90,11 +93,16 @@ git@github.com:apache/zookeeper.git git@github.com:mapr/private-zookeeper.git pr
 git@github.com:swagger-api/swagger-codegen.git git@github.com:mapr/private-swagger-codegen.git private-swagger-codegen
 git@github.com:apache/zeppelin.git git@github.com:mapr/private-zeppelin.git private-zeppelin"
 
+if [ ${TEST} -eq 1 ]; then
+    TUPLES="git@github.com:OpenTSDB/asynchbase.git git@github.com:mapr/asynchbase.git asynchbase"
+fi
+
 echo "$TUPLES" | while read UPSTREAM_REPO DOWNSTREAM_REPO WORKSPACE_REPO
 do
   echo "Waiting for github.com traffic to calm down..."
   sleep 60s
-  ./sync-one-repo.sh ${UPSTREAM_REPO} ${DOWNSTREAM_REPO} ${WORKSPACE_REPO}
+  ($(git:rootFolder)/sync-one-repo.sh ${UPSTREAM_REPO} ${DOWNSTREAM_REPO} "$(workspace:location ${GITWORKSPACE} ${WORKSPACE_REPO})")
 done #done iterating over tuples
-popd #popping GITWORKSPACE for completeness
+
+}
 
