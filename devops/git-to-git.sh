@@ -29,8 +29,8 @@ git@github.com:Cascading/cascading.git git@github.com:mapr/cascading.git cascadi
 git@github.com:Cascading/cascading.git git@github.com:mapr/private-cascading.git private-cascading
 git@github.com:Cascading/cascading.samples.git git@github.com:mapr/cascading.samples.git cascading.samples
 git@github.com:Cascading/cascading.samples.git git@github.com:mapr/private-cascading.samples.git private-cascading.samples
-https://git-wip-us.apache.org/repos/asf/drill.git/ git@github.com:mapr/incubator-drill incubator-drill
-https://git-wip-us.apache.org/repos/asf/drill.git/ git@github.com:mapr/private-drill private-drill
+git@github.com:apache/drill.git git@github.com:mapr/incubator-drill incubator-drill
+git@github.com:apache/drill.git git@github.com:mapr/private-drill private-drill
 git@github.com:apache/flume.git git@github.com:mapr/flume.git flume
 git@github.com:apache/flume.git git@github.com:mapr/private-flume.git private-flume
 git@github.com:grafana/grafana.git git@github.com:mapr/grafana.git grafana
