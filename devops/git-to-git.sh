@@ -91,7 +91,9 @@ git@github.com:brianfrankcooper/YCSB.git git@github.com:mapr/private-YCSB.git pr
 git@github.com:apache/zookeeper.git git@github.com:mapr/zookeeper.git zookeeper
 git@github.com:apache/zookeeper.git git@github.com:mapr/private-zookeeper.git private-zookeeper
 git@github.com:swagger-api/swagger-codegen.git git@github.com:mapr/private-swagger-codegen.git private-swagger-codegen
-git@github.com:apache/zeppelin.git git@github.com:mapr/private-zeppelin.git private-zeppelin"
+git@github.com:apache/zeppelin.git git@github.com:mapr/private-zeppelin.git private-zeppelin
+git@github.com:GoogleCloudPlatform/spark-on-k8s-operator.git git@github.com:mapr/private-spark-on-k8s-operator.git private-spark-on-k8s-operator
+git@github.com:GoogleCloudPlatform/spark-on-k8s-operator.git git@github.com:mapr/spark-on-k8s-operator.git spark-on-k8s-operator"
 
 if [ ${TEST} -eq 1 ]; then
     TUPLES="git@github.com:OpenTSDB/asynchbase.git git@github.com:mapr/asynchbase.git asynchbase"
