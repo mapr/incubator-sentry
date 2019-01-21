@@ -63,6 +63,7 @@ git@github.com:apache/kafka.git git@github.com:mapr/private-kafka.git private-ka
 git@github.com:apache/kafka.git git@github.com:mapr/kafka.git kafka
 git@github.com:confluentinc/ksql.git git@github.com:mapr/private-kafka-ksql.git private-kafka-ksql
 git@github.com:confluentinc/ksql.git git@github.com:mapr/ksql.git kafka-ksql
+git@github.com:kubeflow/kubeflow.git git@github.com:mapr/kubeflow.git kubeflow
 git@github.com:mongodb/libbson.git git@github.com:mapr/libbson.git libbson
 git@github.com:mongodb/libbson.git git@github.com:mapr/private-libbson.git private-libbson
 git@github.com:edenhill/librdkafka.git git@github.com:mapr/private-librdkafka.git private-librdkafka
