@@ -60,7 +60,9 @@ git@github.com:cloudera/impala.git git@github.com:mapr/private-impala.git privat
 git@github.com:01org/isa-l.git git@github.com:mapr/isa-l.git isa-l
 git@github.com:01org/isa-l.git git@github.com:mapr/private-isa-l.git private-isa-l
 git@github.com:apache/kafka.git git@github.com:mapr/private-kafka.git private-kafka
+git@github.com:apache/kafka.git git@github.com:mapr/kafka.git kafka
 git@github.com:confluentinc/ksql.git git@github.com:mapr/private-kafka-ksql.git private-kafka-ksql
+git@github.com:confluentinc/ksql.git git@github.com:mapr/ksql.git kafka-ksql
 git@github.com:mongodb/libbson.git git@github.com:mapr/libbson.git libbson
 git@github.com:mongodb/libbson.git git@github.com:mapr/private-libbson.git private-libbson
 git@github.com:edenhill/librdkafka.git git@github.com:mapr/private-librdkafka.git private-librdkafka
@@ -93,7 +95,18 @@ git@github.com:apache/zookeeper.git git@github.com:mapr/private-zookeeper.git pr
 git@github.com:swagger-api/swagger-codegen.git git@github.com:mapr/private-swagger-codegen.git private-swagger-codegen
 git@github.com:apache/zeppelin.git git@github.com:mapr/private-zeppelin.git private-zeppelin
 git@github.com:GoogleCloudPlatform/spark-on-k8s-operator.git git@github.com:mapr/private-spark-on-k8s-operator.git private-spark-on-k8s-operator
-git@github.com:GoogleCloudPlatform/spark-on-k8s-operator.git git@github.com:mapr/spark-on-k8s-operator.git spark-on-k8s-operator"
+git@github.com:GoogleCloudPlatform/spark-on-k8s-operator.git git@github.com:mapr/spark-on-k8s-operator.git spark-on-k8s-operator
+git@github.com:confluentinc/schema-registry.git git@github.com:mapr/schema-registry.git schema-registry
+git@github.com:confluentinc/schema-registry.git git@github.com:mapr/private-schema-registry.git private-schema-registry
+git@github.com:confluentinc/kafka-rest.git git@github.com:mapr/kafka-rest.git kafka-rest
+git@github.com:confluentinc/kafka-rest.git git@github.com:mapr/private-kafka-rest.git private-kafka-rest
+git@github.com:confluentinc/rest-utils.git git@github.com:mapr/rest-utils.git kafka-rest-utils
+git@github.com:confluentinc/rest-utils.git git@github.com:mapr/private-rest-utils.git private-kafka-rest-utils
+git@github.com:confluentinc/kafka-connect-jdbc.git git@github.com:mapr/kafka-connect-jdbc.git kafka-connect-jdbc
+git@github.com:confluentinc/kafka-connect-jdbc.git git@github.com:mapr/private-kafka-connect-jdbc.git private-kafka-connect-jdbc
+git@github.com:confluentinc/kafka-connect-storage-common.git git@github.com:mapr/kafka-connect-storage-common.git kafka-storage-common
+git@github.com:confluentinc/kafka-connect-storage-common.git git@github.com:mapr/private-kafka-connect-storage-common.git private-kafka-storage-common
+git@github.com:confluentinc/kafka-connect-hdfs.git git@github.com:mapr/private-kafka-connect-hdfs.git private-kafka-connect-hdfs"
 
 if [ ${TEST} -eq 1 ]; then
     TUPLES="git@github.com:OpenTSDB/asynchbase.git git@github.com:mapr/asynchbase.git asynchbase"
